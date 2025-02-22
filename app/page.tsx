@@ -31,6 +31,22 @@ export default function Home() {
     severity: "Low" | "Medium" | "High";
     created_at: string;
   }
+
+  const handleDelete = async (auditId: string) => {
+    try {
+      const response = await fetch(`/api/audits?id=${auditId}`, {
+        method: "DELETE",
+      });
+  
+      if (!response.ok) throw new Error("Delete failed");
+      
+      setAudits(audits.filter(audit => audit.id !== auditId));
+      alert("Audit deleted successfully!");
+    } catch (error) {
+      console.error("Delete error:", error);
+      alert("Failed to delete audit");
+    }
+  };
   
   const [audits, setAudits] = useState<Audit[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -212,6 +228,7 @@ export default function Home() {
           </Select>
           <Button type="submit" className="w-full">Add Audit</Button>
         </form>
+        
       </main>
 
       <footer className="text-center text-sm text-gray-500 dark:text-gray-400 mt-8">
