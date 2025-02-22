@@ -126,7 +126,7 @@ export default function Home() {
               <SelectItem value="all" className="dark:hover:bg-gray-600">All</SelectItem>
               <SelectItem value="Low" className="dark:hover:bg-gray-600">Low</SelectItem>
               <SelectItem value="Medium" className="dark:hover:bg-gray-600">Medium</SelectItem>
-              <SelectItem value="High" className="dark:hover:bg-gray-600">High</SelectItem>
+              <SelectItem value="High" className="dark:hover:bg-gray-600">HighGGG</SelectItem>
             </SelectContent>
           </Select>
         </div>
