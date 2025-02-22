@@ -8,7 +8,7 @@ import {
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
-import { Alert } from "@/components/ui/alert";  // Chad UI Alert
+import { Alert, AlertDescription } from "@/components/ui/alert";  // Chad UI Alert
 import { Input } from "@/components/ui/input";  // Chad UI Input for search
 import {
   Select,
@@ -20,7 +20,10 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";  // Chad UI Skeleton for loading state
 import { Sun, Moon } from "lucide-react";  // Icons for light/dark mode
 
+import { signIn, signOut, useSession } from "next-auth/react";
+
 export default function Home() {
+  
   interface Audit {
     id: string;
     contract: string;
@@ -36,22 +39,8 @@ export default function Home() {
   const [severityFilter, setSeverityFilter] = useState<string>("all");  // Default to "all"
   const [darkMode, setDarkMode] = useState<boolean>(false);  // Dark mode state
 
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme === "dark") {
-      setDarkMode(true);
-    }
-  }, []);
-  
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  }, [darkMode]);
+  // Add state for the severity input
+  const [severity, setSeverity] = useState<string>("");
 
   // Fetch audit reports when the component mounts
   useEffect(() => {
@@ -79,8 +68,10 @@ export default function Home() {
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
     } else {
       document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
     }
   }, [darkMode]);
 
@@ -91,6 +82,36 @@ export default function Home() {
     const matchesSeverity = severityFilter === "all" ? true : audit.severity === severityFilter;
     return matchesSearch && matchesSeverity;
   });
+
+  // Form submission handler
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const contract = formData.get("contract") as string;
+    const findings = formData.get("findings") as string;
+    const severity = formData.get("severity") as string;
+
+    try {
+      const response = await fetch("/api/audits", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ contract, findings, severity }),
+      });
+
+      if (response.ok) {
+        const newAudit = await response.json();
+        setAudits([...audits, newAudit]); // Update the audits list
+        alert("Audit added successfully!");
+      } else {
+        alert("Failed to add audit.");
+      }
+    } catch (error) {
+      console.error("Error adding audit:", error);
+      alert("An error occurred while adding the audit.");
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 p-8 sm:p-20">
@@ -126,7 +147,7 @@ export default function Home() {
               <SelectItem value="all" className="dark:hover:bg-gray-600">All</SelectItem>
               <SelectItem value="Low" className="dark:hover:bg-gray-600">Low</SelectItem>
               <SelectItem value="Medium" className="dark:hover:bg-gray-600">Medium</SelectItem>
-              <SelectItem value="High" className="dark:hover:bg-gray-600">HighGGG</SelectItem>
+              <SelectItem value="High" className="dark:hover:bg-gray-600">High</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -139,13 +160,19 @@ export default function Home() {
             <Skeleton className="h-20 w-full dark:bg-gray-700" />
           </div>
         )}
-        {error && <Alert variant="destructive" className="text-center text-lg">{error}</Alert>}
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
         {/* Display the fetched audits */}
         <div className="space-y-6">
           <h2 className="font-semibold text-xl mb-4">Audit Reports</h2>
           {filteredAudits.length === 0 && !loading && !error ? (
-            <Alert className="text-center text-lg">No audit reports found.</Alert>
+            <Alert>
+              <AlertDescription>No audit reports found.</AlertDescription>
+            </Alert>
           ) : (
             <ul className="space-y-4">
               {filteredAudits.map((audit) => (
@@ -168,6 +195,23 @@ export default function Home() {
             </ul>
           )}
         </div>
+
+        {/* Add Audit Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input name="contract" placeholder="Contract Name" required />
+          <Input name="findings" placeholder="Findings" required />
+          <Select name="severity" value={severity} onValueChange={setSeverity}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select Severity" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Low">Low</SelectItem>
+              <SelectItem value="Medium">Medium</SelectItem>
+              <SelectItem value="High">High</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button type="submit" className="w-full">Add Audit</Button>
+        </form>
       </main>
 
       <footer className="text-center text-sm text-gray-500 dark:text-gray-400 mt-8">
