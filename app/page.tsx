@@ -21,7 +21,15 @@ import { Skeleton } from "@/components/ui/skeleton";  // Chad UI Skeleton for lo
 import { Sun, Moon } from "lucide-react";  // Icons for light/dark mode
 
 export default function Home() {
-  const [audits, setAudits] = useState<any[]>([]); // Holds the fetched audit reports
+  interface Audit {
+    id: string;
+    contract: string;
+    findings: string;
+    severity: "Low" | "Medium" | "High";
+    created_at: string;
+  }
+  
+  const [audits, setAudits] = useState<Audit[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
