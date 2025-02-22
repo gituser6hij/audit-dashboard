@@ -148,7 +148,7 @@ export default function Home() {
             <Alert className="text-center text-lg">No audit reports found.</Alert>
           ) : (
             <ul className="space-y-4">
-              {filteredAudits.map((audit: any) => (
+              {filteredAudits.map((audit) => (
                 <Card key={audit.id} className="space-y-2 dark:bg-gray-700 dark:border-gray-600">
                   <CardHeader>
                     <h3 className="text-lg font-semibold dark:text-gray-100">Contract: {audit.contract}</h3>
