@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";  // Chad UI Button
+import AuditMetrics from "@/components/audit-metrics";  // Chad UI AuditMetrics
 import {
   Card,
   CardContent,
@@ -138,6 +139,8 @@ export default function Home() {
           <h1 className="text-3xl font-bold mt-4">Audit Dashboard</h1>
         </header>
 
+        <AuditMetrics audits={audits} />
+
         {/* Search and Filter Section */}
         <div className="flex flex-col sm:flex-row gap-4">
           <Input
@@ -219,6 +222,7 @@ export default function Home() {
           </Select>
           <Button type="submit" className="w-full">Add Audit</Button>
         </form>
+        
       </main>
 
       <footer className="text-center text-sm text-gray-500 dark:text-gray-400 mt-8">
