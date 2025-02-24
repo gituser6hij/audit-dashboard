@@ -2,6 +2,8 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
+import { PieChart, Pie, Cell } from 'recharts';
+
 interface Audit {
   id: string;
   contract: string;
@@ -33,6 +35,21 @@ const AuditMetrics = ({ audits }: { audits: Audit[] }) => {
 
   // Calculate total findings
   const totalFindings = audits.length;
+
+
+
+  const severityColors = {
+    High: '#FF4560', // Red
+    Medium: '#00E396', // Green
+    Low: '#008FFB', // Blue
+  };
+  
+  const pieChartData = Object.entries(severityCounts).map(([severity, count]) => ({
+    name: severity,
+    value: count,
+    color: severityColors[severity as keyof typeof severityColors],
+  }));
+  
   
   return (
     <div className="space-y-6">
@@ -88,6 +105,37 @@ const AuditMetrics = ({ audits }: { audits: Audit[] }) => {
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+    <CardHeader>
+      <CardTitle>Severity Distribution</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="h-[300px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={pieChartData}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              outerRadius={100}
+              fill="#8884d8"
+              label
+            >
+              {pieChartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip 
+              
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+    </CardContent>
+  </Card>
     </div>
   );
 };

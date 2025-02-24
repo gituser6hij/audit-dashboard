@@ -23,8 +23,16 @@ import { Sun, Moon } from "lucide-react";  // Icons for light/dark mode
 
 import { signIn, signOut, useSession } from "next-auth/react";
 
+// Add modal (using shadcn/ui Dialog):
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
+import LCDClock from "@/components/LCDClock"; // Add this import
+
+
+
+
 export default function Home() {
-  
+
   interface Audit {
     id: string;
     contract: string;
@@ -32,8 +40,8 @@ export default function Home() {
     severity: "Low" | "Medium" | "High";
     created_at: string;
   }
-  
-  
+
+
   const [audits, setAudits] = useState<Audit[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
@@ -43,6 +51,11 @@ export default function Home() {
 
   // Add state for the severity input
   const [severity, setSeverity] = useState<string>("");
+
+  // Add to Home component
+  const [selectedAudit, setSelectedAudit] = useState<Audit | null>(null);
+
+
 
   // Fetch audit reports when the component mounts
   useEffect(() => {
@@ -66,8 +79,8 @@ export default function Home() {
     fetchAudits();
   }, []);
 
-   // Load dark mode preference when component mounts
-   useEffect(() => {
+  // Load dark mode preference when component mounts
+  useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     setDarkMode(savedTheme === "dark");
   }, []);
@@ -121,27 +134,49 @@ export default function Home() {
     }
   };
 
+  // Add delete handler
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this audit?")) return;
+
+    try {
+      const response = await fetch("/api/audits", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id }),
+      });
+
+      if (response.ok) {
+        setAudits(audits.filter((audit) => audit.id !== id)); // Remove the deleted audit from state
+        alert("Audit deleted successfully!");
+      } else {
+        alert("Failed to delete audit.");
+      }
+    } catch (error) {
+      console.error("Error deleting audit:", error);
+      alert("An error occurred while deleting the audit.");
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 p-8 sm:p-20">
       <main className="w-full max-w-4xl p-6 bg-white dark:bg-gray-800 shadow-lg rounded-lg space-y-8">
-        {/* Dark Mode Toggle Button */}
         <div className="flex justify-end">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setDarkMode(!darkMode)}
-          >
+          <Button variant="outline" size="icon" onClick={() => setDarkMode(!darkMode)}>
             {darkMode ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
           </Button>
         </div>
-
         <header className="text-center">
-          <h1 className="text-3xl font-bold mt-4">Audit Dashboard</h1>
+          <h1 className="text-4xl font-bold mt-4 text-primary">user137 Audit Dashboard</h1>
+          <p className="text-gray-600 dark:text-gray-400">Smart Contract Security Research</p>
+          
         </header>
-
+        <div className="flex justify-center">
+          <LCDClock /> {/* Add the clock here */}
+          
+        </div>
         <AuditMetrics audits={audits} />
-
-        {/* Search and Filter Section */}
         <div className="flex flex-col sm:flex-row gap-4">
           <Input
             placeholder="Search by contract or findings..."
@@ -161,8 +196,6 @@ export default function Home() {
             </SelectContent>
           </Select>
         </div>
-
-        {/* Display loading or error */}
         {loading && (
           <div className="space-y-4">
             <Skeleton className="h-10 w-full dark:bg-gray-700" />
@@ -175,8 +208,6 @@ export default function Home() {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-
-        {/* Display the fetched audits */}
         <div className="space-y-6">
           <h2 className="font-semibold text-xl mb-4">Audit Reports</h2>
           {filteredAudits.length === 0 && !loading && !error ? (
@@ -195,18 +226,39 @@ export default function Home() {
                     <p className="dark:text-gray-300"><strong>Severity:</strong> {audit.severity}</p>
                     <p className="dark:text-gray-300"><strong>Created At:</strong> {audit.created_at}</p>
                   </CardContent>
-                  <CardFooter>
-                    <Button variant="outline" className="w-full dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500">
+                  <CardFooter className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500"
+                      onClick={() => setSelectedAudit(audit)}
+                    >
                       View Details
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      className="flex-1"
+                      onClick={() => handleDelete(audit.id)}
+                    >
+                      Delete
                     </Button>
                   </CardFooter>
                 </Card>
               ))}
             </ul>
           )}
+          {selectedAudit && (
+            <Dialog open={!!selectedAudit} onOpenChange={() => setSelectedAudit(null)}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{selectedAudit.contract}</DialogTitle>
+                </DialogHeader>
+                <p><strong>Findings:</strong> {selectedAudit.findings}</p>
+                <p><strong>Severity:</strong> {selectedAudit.severity}</p>
+                <p><strong>Date:</strong> {selectedAudit.created_at}</p>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
-
-        {/* Add Audit Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input name="contract" placeholder="Contract Name" required />
           <Input name="findings" placeholder="Findings" required />
@@ -222,11 +274,9 @@ export default function Home() {
           </Select>
           <Button type="submit" className="w-full">Add Audit</Button>
         </form>
-        
       </main>
-
       <footer className="text-center text-sm text-gray-500 dark:text-gray-400 mt-8">
-        <p>&copy; {new Date().getFullYear()} Audit Dashboard</p>
+        <p>© {new Date().getFullYear()} Audit Dashboard</p>
       </footer>
     </div>
   );
