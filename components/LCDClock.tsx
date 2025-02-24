@@ -107,7 +107,7 @@ const LCDClock = () => {
 
 // CSS animation for blinking colon
 const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
   
   @font-face {
     font-family: 'Digital-7';

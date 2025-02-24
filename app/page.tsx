@@ -13,6 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import LCDClock from "@/components/LCDClock";
 import { ethers } from "ethers";
 
+import jsPDF from 'jspdf';
+
 export default function Home() {
   interface Audit {
     id: string;
@@ -193,8 +195,8 @@ export default function Home() {
       return;
     }
     try {
-      const accounts = await window.ethereum.request({ 
-        method: "eth_requestAccounts" 
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts"
       });
       setWalletAddress(accounts[0].toLowerCase());
     } catch (err) {
@@ -202,6 +204,21 @@ export default function Home() {
       // Could add more specific error messages based on error type
       alert("Failed to connect wallet. Please try again.");
     }
+  };
+
+  const generatePdf = (audit: Audit) => {
+    const doc = new jsPDF();
+
+    doc.setFontSize(18);
+    doc.text(`Audit Report: ${audit.contract}`, 10, 20);
+    doc.setFontSize(12);
+
+    doc.text(`Contract Address: ${audit.contract}`, 10, 40);
+    doc.text(`Findings: ${audit.findings}`, 10, 50);
+    doc.text(`Severity: ${audit.severity}`, 10, 60);
+    doc.text(`Audit Date: ${audit.created_at}`, 10, 70);
+
+    doc.save(`audit_report_${audit.contract}_${audit.created_at}.pdf`);
   };
 
   return (
@@ -289,7 +306,7 @@ export default function Home() {
                       className="flex-1 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500"
                       onClick={() => setSelectedAudit(audit)}
                     >
-                      View Details
+                      Details
                     </Button>
                     {walletAddress === MY_WALLET_ADDRESS.toLowerCase() && (
                       <>
@@ -320,9 +337,17 @@ export default function Home() {
                 <DialogHeader>
                   <DialogTitle>{selectedAudit.contract}</DialogTitle>
                 </DialogHeader>
-                <p><strong>Findings:</strong> {selectedAudit.findings}</p>
-                <p><strong>Severity:</strong> {selectedAudit.severity}</p>
-                <p><strong>Date:</strong> {selectedAudit.created_at}</p>
+                <div className="space-y-4">
+                  <p><strong>Findings:</strong> {selectedAudit.findings}</p>
+                  <p><strong>Severity:</strong> {selectedAudit.severity}</p>
+                  <p><strong>Date:</strong> {selectedAudit.created_at}</p>
+                  <Button
+                    onClick={() => generatePdf(selectedAudit)}
+                    className="w-full mt-4"
+                  >
+                    Download PDF Report
+                  </Button>
+                </div>
               </DialogContent>
             </Dialog>
           )}
@@ -370,22 +395,50 @@ export default function Home() {
           )}
         </div>
         {walletAddress === MY_WALLET_ADDRESS.toLowerCase() && (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input name="contract" placeholder="Contract Name" required />
-            <Input name="findings" placeholder="Findings" required />
-            <Select name="severity" value={severity} onValueChange={setSeverity}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select Severity" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Low">Low</SelectItem>
-                <SelectItem value="Medium">Medium</SelectItem>
-                <SelectItem value="High">High</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button type="submit" className="w-full">Add Audit</Button>
-          </form>
-        )}
+  <Card className="dark:bg-gray-700 dark:border-gray-600">
+    <CardHeader>
+      <h2 className="text-xl font-semibold dark:text-gray-100">Add New Audit</h2>
+    </CardHeader>
+    <CardContent>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input 
+          name="contract" 
+          placeholder="Contract Name" 
+          required 
+          className="dark:bg-gray-600 dark:border-gray-500 dark:text-gray-100"
+        />
+        <Input 
+          name="findings" 
+          placeholder="Findings" 
+          required 
+          className="dark:bg-gray-600 dark:border-gray-500 dark:text-gray-100"
+        />
+        <Select 
+          name="severity" 
+          value={severity} 
+          onValueChange={setSeverity}
+        >
+          <SelectTrigger className="dark:bg-gray-600 dark:border-gray-500 dark:text-gray-100">
+            <SelectValue placeholder="Select Severity" />
+          </SelectTrigger>
+          <SelectContent className="dark:bg-gray-600 dark:border-gray-500">
+            <SelectItem value="Low" className="dark:hover:bg-gray-500">Low</SelectItem>
+            <SelectItem value="Medium" className="dark:hover:bg-gray-500">Medium</SelectItem>
+            <SelectItem value="High" className="dark:hover:bg-gray-500">High</SelectItem>
+          </SelectContent>
+        </Select>
+        <CardFooter className="px-0 pb-0">
+          <Button 
+            type="submit" 
+            className="w-full dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500"
+          >
+            Add Audit
+          </Button>
+        </CardFooter>
+      </form>
+    </CardContent>
+  </Card>
+)}
       </main>
 
       <footer className="text-center text-sm text-gray-500 dark:text-gray-400 mt-8">
