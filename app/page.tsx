@@ -188,42 +188,47 @@ export default function Home() {
   };
 
   const connectWallet = async () => {
-    if (typeof window.ethereum !== "undefined") {
-      try {
-        const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-        setWalletAddress(accounts[0].toLowerCase());
-      } catch (err) {
-        console.error("Failed to connect wallet:", err);
-        alert("Failed to connect wallet. Please try again.");
-      }
-    } else {
+    if (typeof window.ethereum === "undefined") {
       alert("Please install MetaMask or another Ethereum wallet provider.");
+      return;
+    }
+    try {
+      const accounts = await window.ethereum.request({ 
+        method: "eth_requestAccounts" 
+      });
+      setWalletAddress(accounts[0].toLowerCase());
+    } catch (err) {
+      console.error("Failed to connect wallet:", err);
+      // Could add more specific error messages based on error type
+      alert("Failed to connect wallet. Please try again.");
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 p-8 sm:p-20">
+
       <main className="w-full max-w-4xl p-6 bg-white dark:bg-gray-800 shadow-lg rounded-lg space-y-8">
-      <div className="flex items-center justify-between w-full">
-  
 
-  {/* Clock centered */}
-  <div className="flex-1 flex justify-center">
-    <LCDClock />
-  </div>
+        <div className="flex items-center justify-between w-full">
 
-  {/* Theme button aligned right */}
-  <Button variant="outline" size="icon" onClick={() => setDarkMode(!darkMode)}>
-    {darkMode ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-  </Button>
-</div>
+
+          {/* Clock centered */}
+          <div className="flex-1 flex justify-center ml-8">
+            <LCDClock />
+          </div>
+
+          {/* Theme button aligned right */}
+          <Button variant="outline" size="icon" onClick={() => setDarkMode(!darkMode)}>
+            {darkMode ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+          </Button>
+        </div>
         <header className="text-center">
           {/* Logo aligned left */}
-  <div className="flex justify-center items-center ">
-  <img src="/user137.png" alt="user137" className="border border-gray-300 rounded-full h-16 w-16 rounded-full" />
-</div>
+          <div className="flex justify-center items-center ">
+            <img src="/user137.png" alt="user137" className="border border-gray-300 rounded-full h-16 w-16 rounded-full" />
+          </div>
           <div className="flex justify-center items-center gap-4">
-            
+
             <h1 className="text-4xl font-bold mt-4 text-primary">user137 Audit Portfolio</h1>
           </div>
           <p className="text-gray-600 dark:text-gray-400">Smart Contract Security Research</p>
