@@ -370,14 +370,13 @@ export default function Home() {
           </form>
         )}
       </main>
-      <div className="w-full max-w-4xl p-6 bg-white dark:bg-gray-800 shadow-lg rounded-lg space-y-8 flex justify-end items-center">
+
+      <footer className="text-center text-sm text-gray-500 dark:text-gray-400 mt-8">
         <Button variant="outline" onClick={connectWallet}>
           {walletAddress ? `Connected: ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : "Connect Wallet"}
         </Button>
-        
-      </div>
-      <footer className="text-center text-sm text-gray-500 dark:text-gray-400 mt-8">
-        <p>© {new Date().getFullYear()} Audit Dashboard</p>
+        <p className="mt-4">© {new Date().getFullYear()} Audit Dashboard</p>
+
       </footer>
     </div>
   );
