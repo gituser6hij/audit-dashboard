@@ -218,11 +218,12 @@ export default function Home() {
   </Button>
 </div>
         <header className="text-center">
-          <div className="flex justify-center items-center gap-4">
-            {/* Logo aligned left */}
-  <div className="border border-gray-300 rounded-full p-1">
-  <img src="/user137.png" alt="user137" className="h-16 rounded-full" />
+          {/* Logo aligned left */}
+  <div className="flex justify-center items-center ">
+  <img src="/user137.png" alt="user137" className="border border-gray-300 rounded-full h-16 w-16 rounded-full" />
 </div>
+          <div className="flex justify-center items-center gap-4">
+            
             <h1 className="text-4xl font-bold mt-4 text-primary">user137 Audit Portfolio</h1>
           </div>
           <p className="text-gray-600 dark:text-gray-400">Smart Contract Security Research</p>
