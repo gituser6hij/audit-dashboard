@@ -204,12 +204,22 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 p-8 sm:p-20">
       <main className="w-full max-w-4xl p-6 bg-white dark:bg-gray-800 shadow-lg rounded-lg space-y-8">
-        <div className="flex justify-end items-center">
-          <Button variant="outline" size="icon" onClick={() => setDarkMode(!darkMode)}>
-            {darkMode ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-          </Button>
-        </div>
-        <LCDClock />
+      <div className="flex items-center justify-between w-full">
+  {/* Logo aligned left */}
+  <div className="border border-gray-300 rounded-full p-1">
+  <img src="/user137.png" alt="user137" className="h-16 rounded-full" />
+</div>
+
+  {/* Clock centered */}
+  <div className="flex-1 flex justify-center">
+    <LCDClock />
+  </div>
+
+  {/* Theme button aligned right */}
+  <Button variant="outline" size="icon" onClick={() => setDarkMode(!darkMode)}>
+    {darkMode ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+  </Button>
+</div>
         <header className="text-center">
           <div className="flex justify-center items-center gap-4">
             <h1 className="text-4xl font-bold mt-4 text-primary">user137 Audit Portfolio</h1>
