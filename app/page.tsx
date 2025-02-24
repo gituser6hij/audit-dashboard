@@ -181,19 +181,16 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 p-8 sm:p-20">
       <main className="w-full max-w-4xl p-6 bg-white dark:bg-gray-800 shadow-lg rounded-lg space-y-8">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-end items-center">
           <Button variant="outline" size="icon" onClick={() => setDarkMode(!darkMode)}>
             {darkMode ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
           </Button>
-          <Button variant="outline" onClick={connectWallet}>
-            {walletAddress ? `Connected: ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : "Connect Wallet"}
-          </Button>
-          
         </div>
+        <LCDClock />
         <header className="text-center">
           <div className="flex justify-center items-center gap-4">
             <h1 className="text-4xl font-bold mt-4 text-primary">user137 Audit Portfolio</h1>
-            <LCDClock />
+
           </div>
           <p className="text-gray-600 dark:text-gray-400">Smart Contract Security Research</p>
         </header>
@@ -298,6 +295,14 @@ export default function Home() {
           <Button type="submit" className="w-full">Add Audit</Button>
         </form>
       </main>
+      <div className="w-full max-w-4xl p-6 bg-white dark:bg-gray-800 shadow-lg rounded-lg space-y-8 flex justify-end items-center">
+
+        <Button variant="outline" onClick={connectWallet}>
+          {walletAddress ? `Connected: ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : "Connect Wallet"}
+        </Button>
+
+
+      </div>
       <footer className="text-center text-sm text-gray-500 dark:text-gray-400 mt-8">
         <p>© {new Date().getFullYear()} Audit Dashboard</p>
       </footer>
