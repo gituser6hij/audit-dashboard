@@ -213,7 +213,7 @@ export default function Home() {
 
 
           {/* Clock centered */}
-          <div className="flex-1 flex justify-center ml-8">
+          <div className="flex-1 flex justify-left">
             <LCDClock />
           </div>
 
