@@ -13,7 +13,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import LCDClock from "@/components/LCDClock";
 import { ethers } from "ethers";
 
-
 export default function Home() {
   interface Audit {
     id: string;
@@ -31,46 +30,40 @@ export default function Home() {
   const [darkMode, setDarkMode] = useState<boolean>(false);
   const [severity, setSeverity] = useState<string>("");
   const [selectedAudit, setSelectedAudit] = useState<Audit | null>(null);
-  const [walletAddress, setWalletAddress] = useState<string | null>(null); // Wallet state
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [editAudit, setEditAudit] = useState<Audit | null>(null); // State for editing
+
+  const MY_WALLET_ADDRESS = "0x053b8096a0C61792E936a8eB0958362A3EB4dd0d";
 
   const disconnectWallet = () => {
     setWalletAddress(null);
   };
 
-  // Your hardcoded Ethereum wallet address (replace with your actual address)
-  const MY_WALLET_ADDRESS = "0x053b8096a0C61792E936a8eB0958362A3EB4dd0d"; // e.g., "0x1234567890abcdef1234567890abcdef12345678"
-
-  // Check wallet connection on mount and on account change
   useEffect(() => {
     const checkWalletConnection = async () => {
       if (typeof window.ethereum !== "undefined") {
         try {
-          // Request accounts from MetaMask
           const accounts = await window.ethereum.request({ method: "eth_accounts" });
           if (accounts.length > 0) {
-            setWalletAddress(accounts[0].toLowerCase()); // Normalize to lowercase
+            setWalletAddress(accounts[0].toLowerCase());
           }
         } catch (err) {
           console.error("Failed to fetch wallet address:", err);
         }
-
-        // Listen for account changes
         window.ethereum.on("accountsChanged", (accounts: string[]) => {
           if (accounts.length > 0) {
             setWalletAddress(accounts[0].toLowerCase());
           } else {
-            setWalletAddress(null); // Disconnected
+            setWalletAddress(null);
           }
         });
       } else {
         console.log("Please install MetaMask or another Ethereum wallet provider.");
       }
     };
-
     checkWalletConnection();
   }, []);
 
-  // Fetch audits
   useEffect(() => {
     const fetchAudits = async () => {
       try {
@@ -88,7 +81,6 @@ export default function Home() {
     fetchAudits();
   }, []);
 
-  // Dark mode logic
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     setDarkMode(savedTheme === "dark");
@@ -118,6 +110,10 @@ export default function Home() {
     const contract = formData.get("contract") as string;
     const findings = formData.get("findings") as string;
     const severity = formData.get("severity") as string;
+    if (walletAddress !== MY_WALLET_ADDRESS.toLowerCase()) {
+      alert("Only the authorized wallet can add audits.");
+      return;
+    }
     try {
       const response = await fetch("/api/audits", {
         method: "POST",
@@ -138,12 +134,10 @@ export default function Home() {
   };
 
   const handleDelete = async (id: string) => {
-    // Only allow delete if the connected wallet matches your hardcoded address
     if (walletAddress !== MY_WALLET_ADDRESS.toLowerCase()) {
       alert("Only the authorized wallet can delete audits.");
       return;
     }
-
     if (!confirm("Are you sure you want to delete this audit?")) return;
     try {
       const response = await fetch("/api/audits", {
@@ -163,7 +157,36 @@ export default function Home() {
     }
   };
 
-  // Helper to connect wallet manually
+  const handleEdit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editAudit || walletAddress !== MY_WALLET_ADDRESS.toLowerCase()) {
+      alert("Only the authorized wallet can edit audits.");
+      return;
+    }
+    const formData = new FormData(e.currentTarget);
+    const contract = formData.get("contract") as string;
+    const findings = formData.get("findings") as string;
+    const severity = formData.get("severity") as "Low" | "Medium" | "High";
+    try {
+      const response = await fetch("/api/audits", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editAudit.id, contract, findings, severity }),
+      });
+      if (response.ok) {
+        const updatedAudit = await response.json();
+        setAudits(audits.map((audit) => (audit.id === updatedAudit.id ? updatedAudit : audit)));
+        setEditAudit(null); // Close the dialog
+        alert("Audit updated successfully!");
+      } else {
+        alert("Failed to update audit.");
+      }
+    } catch (error) {
+      console.error("Error updating audit:", error);
+      alert("An error occurred while updating the audit.");
+    }
+  };
+
   const connectWallet = async () => {
     if (typeof window.ethereum !== "undefined") {
       try {
@@ -190,7 +213,6 @@ export default function Home() {
         <header className="text-center">
           <div className="flex justify-center items-center gap-4">
             <h1 className="text-4xl font-bold mt-4 text-primary">user137 Audit Portfolio</h1>
-
           </div>
           <p className="text-gray-600 dark:text-gray-400">Smart Contract Security Research</p>
         </header>
@@ -253,13 +275,22 @@ export default function Home() {
                       View Details
                     </Button>
                     {walletAddress === MY_WALLET_ADDRESS.toLowerCase() && (
-                      <Button
-                        variant="destructive"
-                        className="flex-1"
-                        onClick={() => handleDelete(audit.id)}
-                      >
-                        Delete
-                      </Button>
+                      <>
+                        <Button
+                          variant="outline"
+                          className="flex-1 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500"
+                          onClick={() => setEditAudit(audit)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          className="flex-1"
+                          onClick={() => handleDelete(audit.id)}
+                        >
+                          Delete
+                        </Button>
+                      </>
                     )}
                   </CardFooter>
                 </Card>
@@ -278,30 +309,72 @@ export default function Home() {
               </DialogContent>
             </Dialog>
           )}
+          {editAudit && (
+            <Dialog open={!!editAudit} onOpenChange={() => setEditAudit(null)}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Audit</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleEdit} className="space-y-4">
+                  <Input
+                    name="contract"
+                    placeholder="Contract Name"
+                    defaultValue={editAudit.contract}
+                    required
+                  />
+                  <Input
+                    name="findings"
+                    placeholder="Findings"
+                    defaultValue={editAudit.findings}
+                    required
+                  />
+                  <Select
+                    name="severity"
+                    value={editAudit.severity}
+                    onValueChange={(value) =>
+                      setEditAudit({ ...editAudit, severity: value as "Low" | "Medium" | "High" })
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select Severity" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Low">Low</SelectItem>
+                      <SelectItem value="Medium">Medium</SelectItem>
+                      <SelectItem value="High">High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button type="submit" className="w-full">
+                    Save Changes
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input name="contract" placeholder="Contract Name" required />
-          <Input name="findings" placeholder="Findings" required />
-          <Select name="severity" value={severity} onValueChange={setSeverity}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select Severity" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Low">Low</SelectItem>
-              <SelectItem value="Medium">Medium</SelectItem>
-              <SelectItem value="High">High</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button type="submit" className="w-full">Add Audit</Button>
-        </form>
+        {walletAddress === MY_WALLET_ADDRESS.toLowerCase() && (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input name="contract" placeholder="Contract Name" required />
+            <Input name="findings" placeholder="Findings" required />
+            <Select name="severity" value={severity} onValueChange={setSeverity}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select Severity" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Low">Low</SelectItem>
+                <SelectItem value="Medium">Medium</SelectItem>
+                <SelectItem value="High">High</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button type="submit" className="w-full">Add Audit</Button>
+          </form>
+        )}
       </main>
       <div className="w-full max-w-4xl p-6 bg-white dark:bg-gray-800 shadow-lg rounded-lg space-y-8 flex justify-end items-center">
-
         <Button variant="outline" onClick={connectWallet}>
           {walletAddress ? `Connected: ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : "Connect Wallet"}
         </Button>
-
-
+        
       </div>
       <footer className="text-center text-sm text-gray-500 dark:text-gray-400 mt-8">
         <p>© {new Date().getFullYear()} Audit Dashboard</p>
