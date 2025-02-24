@@ -1,38 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";  // Chad UI Button
-import AuditMetrics from "@/components/audit-metrics";  // Chad UI AuditMetrics
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";  // Chad UI Alert
-import { Input } from "@/components/ui/input";  // Chad UI Input for search
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";  // Chad UI Select for severity filter
-import { Skeleton } from "@/components/ui/skeleton";  // Chad UI Skeleton for loading state
-import { Sun, Moon } from "lucide-react";  // Icons for light/dark mode
-
-import { signIn, signOut, useSession } from "next-auth/react";
-
-// Add modal (using shadcn/ui Dialog):
+import { Button } from "@/components/ui/button";
+import AuditMetrics from "@/components/audit-metrics";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Sun, Moon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-
-import LCDClock from "@/components/LCDClock"; // Add this import
-
-
+import LCDClock from "@/components/LCDClock";
+import { ethers } from "ethers";
 
 
 export default function Home() {
-
   interface Audit {
     id: string;
     contract: string;
@@ -41,51 +23,77 @@ export default function Home() {
     created_at: string;
   }
 
-
   const [audits, setAudits] = useState<Audit[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [severityFilter, setSeverityFilter] = useState<string>("all");  // Default to "all"
-  const [darkMode, setDarkMode] = useState<boolean>(false);  // Dark mode state
-
-  // Add state for the severity input
+  const [severityFilter, setSeverityFilter] = useState<string>("all");
+  const [darkMode, setDarkMode] = useState<boolean>(false);
   const [severity, setSeverity] = useState<string>("");
-
-  // Add to Home component
   const [selectedAudit, setSelectedAudit] = useState<Audit | null>(null);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null); // Wallet state
 
+  const disconnectWallet = () => {
+    setWalletAddress(null);
+  };
 
+  // Your hardcoded Ethereum wallet address (replace with your actual address)
+  const MY_WALLET_ADDRESS = "0x053b8096a0C61792E936a8eB0958362A3EB4dd0d"; // e.g., "0x1234567890abcdef1234567890abcdef12345678"
 
-  // Fetch audit reports when the component mounts
+  // Check wallet connection on mount and on account change
+  useEffect(() => {
+    const checkWalletConnection = async () => {
+      if (typeof window.ethereum !== "undefined") {
+        try {
+          // Request accounts from MetaMask
+          const accounts = await window.ethereum.request({ method: "eth_accounts" });
+          if (accounts.length > 0) {
+            setWalletAddress(accounts[0].toLowerCase()); // Normalize to lowercase
+          }
+        } catch (err) {
+          console.error("Failed to fetch wallet address:", err);
+        }
+
+        // Listen for account changes
+        window.ethereum.on("accountsChanged", (accounts: string[]) => {
+          if (accounts.length > 0) {
+            setWalletAddress(accounts[0].toLowerCase());
+          } else {
+            setWalletAddress(null); // Disconnected
+          }
+        });
+      } else {
+        console.log("Please install MetaMask or another Ethereum wallet provider.");
+      }
+    };
+
+    checkWalletConnection();
+  }, []);
+
+  // Fetch audits
   useEffect(() => {
     const fetchAudits = async () => {
       try {
-        const response = await fetch("/api/audits"); // API route
-        if (!response.ok) {
-          throw new Error("Failed to fetch audits");
-        }
+        const response = await fetch("/api/audits");
+        if (!response.ok) throw new Error("Failed to fetch audits");
         const data = await response.json();
-        console.log("Fetched data:", data);  // Log the fetched data
         setAudits(data);
       } catch (error) {
-        console.error("Error fetching audits:", error);  // Log the error
+        console.error("Error fetching audits:", error);
         setError("Error fetching audit reports");
       } finally {
         setLoading(false);
       }
     };
-
     fetchAudits();
   }, []);
 
-  // Load dark mode preference when component mounts
+  // Dark mode logic
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     setDarkMode(savedTheme === "dark");
   }, []);
 
-  // Toggle dark mode
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add("dark");
@@ -96,34 +104,29 @@ export default function Home() {
     }
   }, [darkMode]);
 
-  // Filter audits based on search query and severity
   const filteredAudits = audits.filter((audit) => {
-    const matchesSearch = audit.contract.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch =
+      audit.contract.toLowerCase().includes(searchQuery.toLowerCase()) ||
       audit.findings.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesSeverity = severityFilter === "all" ? true : audit.severity === severityFilter;
     return matchesSearch && matchesSeverity;
   });
 
-  // Form submission handler
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const contract = formData.get("contract") as string;
     const findings = formData.get("findings") as string;
     const severity = formData.get("severity") as string;
-
     try {
       const response = await fetch("/api/audits", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contract, findings, severity }),
       });
-
       if (response.ok) {
         const newAudit = await response.json();
-        setAudits([...audits, newAudit]); // Update the audits list
+        setAudits([...audits, newAudit]);
         alert("Audit added successfully!");
       } else {
         alert("Failed to add audit.");
@@ -134,21 +137,22 @@ export default function Home() {
     }
   };
 
-  // Add delete handler
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this audit?")) return;
+    // Only allow delete if the connected wallet matches your hardcoded address
+    if (walletAddress !== MY_WALLET_ADDRESS.toLowerCase()) {
+      alert("Only the authorized wallet can delete audits.");
+      return;
+    }
 
+    if (!confirm("Are you sure you want to delete this audit?")) return;
     try {
       const response = await fetch("/api/audits", {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
       });
-
       if (response.ok) {
-        setAudits(audits.filter((audit) => audit.id !== id)); // Remove the deleted audit from state
+        setAudits(audits.filter((audit) => audit.id !== id));
         alert("Audit deleted successfully!");
       } else {
         alert("Failed to delete audit.");
@@ -159,23 +163,40 @@ export default function Home() {
     }
   };
 
+  // Helper to connect wallet manually
+  const connectWallet = async () => {
+    if (typeof window.ethereum !== "undefined") {
+      try {
+        const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+        setWalletAddress(accounts[0].toLowerCase());
+      } catch (err) {
+        console.error("Failed to connect wallet:", err);
+        alert("Failed to connect wallet. Please try again.");
+      }
+    } else {
+      alert("Please install MetaMask or another Ethereum wallet provider.");
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 p-8 sm:p-20">
       <main className="w-full max-w-4xl p-6 bg-white dark:bg-gray-800 shadow-lg rounded-lg space-y-8">
-        <div className="flex justify-end">
+        <div className="flex justify-between items-center">
           <Button variant="outline" size="icon" onClick={() => setDarkMode(!darkMode)}>
             {darkMode ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
           </Button>
+          <Button variant="outline" onClick={connectWallet}>
+            {walletAddress ? `Connected: ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : "Connect Wallet"}
+          </Button>
+          
         </div>
         <header className="text-center">
-          <h1 className="text-4xl font-bold mt-4 text-primary">user137 Audit Dashboard</h1>
+          <div className="flex justify-center items-center gap-4">
+            <h1 className="text-4xl font-bold mt-4 text-primary">user137 Audit Portfolio</h1>
+            <LCDClock />
+          </div>
           <p className="text-gray-600 dark:text-gray-400">Smart Contract Security Research</p>
-          
         </header>
-        <div className="flex justify-center">
-          <LCDClock /> {/* Add the clock here */}
-          
-        </div>
         <AuditMetrics audits={audits} />
         <div className="flex flex-col sm:flex-row gap-4">
           <Input
@@ -234,13 +255,15 @@ export default function Home() {
                     >
                       View Details
                     </Button>
-                    <Button
-                      variant="destructive"
-                      className="flex-1"
-                      onClick={() => handleDelete(audit.id)}
-                    >
-                      Delete
-                    </Button>
+                    {walletAddress === MY_WALLET_ADDRESS.toLowerCase() && (
+                      <Button
+                        variant="destructive"
+                        className="flex-1"
+                        onClick={() => handleDelete(audit.id)}
+                      >
+                        Delete
+                      </Button>
+                    )}
                   </CardFooter>
                 </Card>
               ))}
