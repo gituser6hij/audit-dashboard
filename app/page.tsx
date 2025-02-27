@@ -37,9 +37,6 @@ export default function Home() {
 
   const MY_WALLET_ADDRESS = "0x053b8096a0C61792E936a8eB0958362A3EB4dd0d";
 
-  const disconnectWallet = () => {
-    setWalletAddress(null);
-  };
 
   useEffect(() => {
     const checkWalletConnection = async () => {
